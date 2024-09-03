@@ -21,11 +21,11 @@ import {
   Point,
 } from "@/types/canvas";
 import { useCallback, useState } from "react";
-import Cursor from "./cursor";
 import { nanoid } from "nanoid";
 import { LiveObject } from "@liveblocks/client";
 import { pointerEventToCanvasPoint } from "@/lib/utils";
 import { LayerPreview } from "./layer-preview";
+import { CursorsPresence } from "./cursors-presence";
 
 const MAX_LAYERS = 100;
 
@@ -86,23 +86,21 @@ export default function Canvas({ boardId }: CanvasProps) {
     [lastUsedColor]
   );
 
-  const [{ cursor }, updateMyPresence] = useMyPresence();
+  const onPointerMove = useMutation(
+    ({ setMyPresence }, e: React.PointerEvent) => {
+      e.preventDefault();
+      const current = pointerEventToCanvasPoint(e, camera);
 
-  const others = useOthers();
+      setMyPresence({ cursor: current });
+    },
+    []
+  );
 
-  const onPointerMove = (event: React.PointerEvent) => {
-    updateMyPresence({
-      cursor: {
-        x: Math.round(event.clientX),
-        y: Math.round(event.clientY),
-      },
-    });
-  };
-
-  const onPointerLeave = () =>
-    updateMyPresence({
-      cursor: null,
-    });
+  const onPointerLeave = useMutation(
+    ({ setMyPresence }, e: React.PointerEvent) =>
+      setMyPresence({ cursor: null }),
+    []
+  );
 
   const onWheel = useCallback((e: React.WheelEvent) => {
     setCamera((camera) => ({
@@ -128,13 +126,7 @@ export default function Canvas({ boardId }: CanvasProps) {
   );
 
   return (
-    <main
-      className="h-full w-full relative bg-neutral-100 touch-none"
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
-      onWheel={onWheel}
-      onPointerUp={onPointerUp}
-    >
+    <main className="h-full w-full relative bg-neutral-100 touch-none">
       <Info boardId={boardId} />
       <Participants />
       <Toolbar
@@ -145,32 +137,25 @@ export default function Canvas({ boardId }: CanvasProps) {
         undo={history.undo}
         redo={history.redo}
       />
-
-      {others.map(({ connectionId, presence }) => {
-        if (presence.cursor === null) {
-          return null;
-        }
-        return (
-          <svg key={connectionId} className="h-[100vh] w-[100vw] ">
-            <g style={{ transform: `translate(${camera.x}px, ${camera.y})` }}>
-              {layerIds.map((layerId) => (
-                <LayerPreview
-                  key={layerId}
-                  id={layerId}
-                  onLayerPointerDown={() => {}}
-                  selectionColor="#000"
-                />
-              ))}
-              <Cursor
-                x={presence.cursor.x}
-                y={presence.cursor.y}
-                connectionId={connectionId}
-                camera={camera}
-              />
-            </g>
-          </svg>
-        );
-      })}
+      <svg
+        className="h-[100vh] w-[100vw]"
+        onWheel={onWheel}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
+        onPointerUp={onPointerUp}
+      >
+        <g style={{ transform: `translate(${camera.x}px, ${camera.y})` }}>
+          {layerIds.map((layerId) => (
+            <LayerPreview
+              key={layerId}
+              id={layerId}
+              onLayerPointerDown={() => {}}
+              selectionColor="#000"
+            />
+          ))}
+          <CursorsPresence />
+        </g>
+      </svg>
     </main>
   );
 }

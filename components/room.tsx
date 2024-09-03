@@ -26,9 +26,7 @@ export function Room({ children, roomId, fallback }: RoomProps) {
           layerIds: new LiveList([]),
         }}
       >
-        <ClientSideSuspense fallback={fallback}>
-          {() => children}
-        </ClientSideSuspense>
+        <ClientSideSuspense fallback={fallback}>{children}</ClientSideSuspense>
       </RoomProvider>
     </LiveblocksProvider>
   );

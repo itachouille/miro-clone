@@ -4,18 +4,20 @@ import { connectionIdToColor } from "@/lib/utils";
 import { Camera } from "@/types/canvas";
 import { useOther } from "@liveblocks/react/suspense";
 import { MousePointer2 } from "lucide-react";
+import { memo } from "react";
 
 interface CursorProps {
-  camera: Camera;
   connectionId: number;
-  x: number;
-  y: number;
 }
 
-export default function Cursor({ connectionId, x, y }: CursorProps) {
+function Cursor({ connectionId }: CursorProps) {
   const info = useOther(connectionId, (user) => user?.info);
-  //const cursor = useOther(connectionId, (user) => user.presence.cursor);
+  const cursor = useOther(connectionId, (user) => user.presence.cursor);
   const name = info?.name || "Teammate";
+
+  if (!cursor) return null;
+
+  const { x, y } = cursor;
 
   return (
     <foreignObject
@@ -42,3 +44,5 @@ export default function Cursor({ connectionId, x, y }: CursorProps) {
     </foreignObject>
   );
 }
+
+export default memo(Cursor);
